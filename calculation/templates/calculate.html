@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+{% block style_tag %}
+  <style media="screen">
+    #get_data{
+      margin-top: 25px;
+    }
+  </style>
+{% endblock style_tag %}
+{% block content %}
+  <div class="container">
+    <form class="form" id="ammotization_form">
+      {% csrf_token %}
+
+      <div id="get_data">
+        <label for="">Loan Amount</label>
+        <input type="number" class = "inner_val form-control" name="loan_amnt" id="loan_amnt">
+        <br>
+        <label for="">Rate of intrest</label>
+        <input type="number" class = "inner_val form-control" name="intrest_rate" id="intrest_rate">
+        <br>
+        <label for="">Loan months</label>
+        <input type="number" class="form-control" name="loan_months" id="loan_months">
+      </div>
+        <label for="">Monthly EMI</label>
+        <input type="text" class="form-control" name="monthly_emi" id="monthly_emi" disabled>
+        <br>
+        <div class="inner_complete">
+          <label for="">Total intrest paid</label>
+            <input type="number" class="form-control" name="total_intrest_paid" id="total_intrest_paid" disabled>
+        </div>
+        <br>
+        <button class="btn btn-primary" type="submit" >View ammotization</button>
+    </form>
+
+    <div class="show_the_ammo"></div>
+  </div>
+{% endblock content %}
+{# <h1>test_fun</h1> #}
+
+{% block script_tag %}
+  <script type="text/javascript">
+  {% autoescape off %}
+    var csrftoken = '{{ csrf_token }}';
+    console.log(csrftoken, "::::::::::::::::");
+  {% endautoescape %}
+    $(document).ready(function(){
+      $('#get_data input').on('change', function(){
+        loan_amnt = $('#loan_amnt').val();
+        intrest_rate = $('#intrest_rate').val();
+        loan_months = $('#loan_months').val()
+        if (loan_amnt != '' && intrest_rate != '' && loan_months != '') {
+          data = {'loan_amnt': loan_amnt, 'intrest_rate': intrest_rate, 'loan_months': loan_months, 'initial': 0}
+          ajax_call_write('/ajax_request_data/', data, 'POST', function(response){
+						if (response.status == 200 || response.status == '200') {
+							console.log(response.count, ":::::::::::::::::::::::::");
+              $('#monthly_emi').val(response.count);
+              $('#total_intrest_paid').val(response.intrest);
+						}
+					})
+        }
+      })
+
+
+      $.ajaxSetup({
+           beforeSend: function(xhr, settings) {
+               // function getCookie(name) {
+               //     var cookieValue = null;
+               //     if (document.cookie && document.cookie != '') {
+               //         var cookies = document.cookie.split(';');
+               //         for (var i = 0; i < cookies.length; i++) {
+               //             var cookie = jQuery.trim(cookies[i]);
+               //             // Does this cookie string begin with the name we want?
+               //             if (cookie.substring(0, name.length + 1) == (name + '=')) {
+               //                 cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+               //                 break;
+               //             }
+               //         }
+               //     }
+               //     return cookieValue;
+               // }
+               if (!(/^http:.*/.test(settings.url) || /^https:.*/.test(settings.url))) {
+                   // Only send the token to relative URLs i.e. locally.
+                   xhr.setRequestHeader("X-CSRFToken", csrftoken);
+               }
+           }
+      });
+
+      function ajax_call_write(ajax_url, data, type_request, callbackFunction) {
+					$.ajax({
+						"url": ajax_url,
+						"type": type_request,
+						"data": data,
+            // 'headers': {'X-CSRF-Token': csrftoken},
+						"success": function( response ) {
+							response1 = $.parseJSON(response);
+							console.log(response1.status, "RRRRRRRRRRRRRRRRRRRRR");
+							console.log(response1);
+							callbackFunction(response1);
+						},
+						"error": function( xhr, status, errorThrown ) {
+							console.log(status);
+							alert("Error "+errorThrown+"PPPPPPPPPPPPPPPPPPPPPPPPPPP")
+						 }
+					});
+				}
+
+
+        $('form#ammotization_form').validate({
+          rules: {
+            loan_amnt : {required: true,digits:true},
+            intrest_rate : {required: true,digits:true},
+            loan_months : {required: true,digits:true},
+            monthly_emi : {required: true,digits:true},
+            total_intrest_paid : {required: true,digits:true},
+          },
+          messages:{
+
+          },
+          submitHandler: function(form) {
+            var emi_amount = $('#monthly_emi').val();
+            var loan_amount = $('#loan_amnt').val();
+            var intrest_rate = $('#intrest_rate').val();
+            var loan_months = $('#loan_months').val();
+            var data_to_send = {'emi': emi_amount, 'loan_amnt': loan_amnt, 'intrest_rate': intrest_rate, 'loan_months': loan_months, 'initial': 1}
+            // var data= JSON.stringify( $(form).serializeArray()) // this gets the serialized data of form
+            console.log(data_to_send,"::::PPPPPPPPPPPPPPPPPPPPPPPPPPP");
+            ajax_call_write('/ajax_request_data/', data_to_send, 'POST', function(response){
+   						if (response.status == 200 || response.status == '200') {
+   							console.log(response, ":::::::::::::::::::::::::");
+                var table_form = '<br><table class="table table-striped"><thead><th>Month</th><th>Principle</th><th>EMI</th><th>Intrest paid</th><th>Principle paid</th><th>Remaining Amount</th></thead><tbody>'
+                console.log(response.data.length,"44444444444");
+                for (var i = 0; i < response.data.length; i++) {
+                  var table_data = "<tr>"
+                  for (var j = 0; j < 6; j++) {
+                    table_data += '<td>'+response.data[i][j].toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")+'</td>'
+                  }
+                  table_data += '</tr>'
+                  // response.data[i]
+                  table_form += table_data
+                }
+                table_form += +'</tbody></table>'
+                $('.show_the_ammo').html(table_form);
+   						}
+   					})
+    			}
+        });
+
+    });
+  </script>
+{% endblock script_tag %}
