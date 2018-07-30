@@ -10,6 +10,7 @@
   <div class="container">
     <form class="form" id="ammotization_form">
       {% csrf_token %}
+      {# {{form}} #}
 
       <div id="get_data">
         <label for="">Loan Amount</label>
@@ -21,6 +22,7 @@
         <label for="">Loan months</label>
         <input type="number" class="form-control" name="loan_months" id="loan_months">
       </div>
+        <br>
         <label for="">Monthly EMI</label>
         <input type="text" class="form-control" name="monthly_emi" id="monthly_emi" disabled>
         <br>
@@ -28,6 +30,23 @@
           <label for="">Total intrest paid</label>
             <input type="number" class="form-control" name="total_intrest_paid" id="total_intrest_paid" disabled>
         </div>
+        <br>
+        <label for="">New rate of intrest</label>
+        <input type="number" class="form-control" name="new_roi" id="new_roi" >
+        <br>
+        <label for="installment_paid" >Number of installment paid</label>
+        <input type="number" class="form-control" name="installment_paid" id="installment_paid">
+
+        <br>
+        <label for="select_cal_type">Select Option</label>
+        <select class="form-control" name="select_cal_type" id="select_cal_type">
+          <option value="">Select option</option>
+          <option value="1">Same Months</option>
+          <option value="2">Custom Months</option>
+        </select>
+        <br>
+        <label for="add_number_of_months" id="label_number_months">Add number of months</label>
+        <input type="number" class="form-control" name="add_number_of_months" id="add_number_of_months" value="0">
         <br>
         <button class="btn btn-primary" type="submit" >View ammotization</button>
     </form>
@@ -43,7 +62,10 @@
     var csrftoken = '{{ csrf_token }}';
     console.log(csrftoken, "::::::::::::::::");
   {% endautoescape %}
+    $('#add_number_of_months').hide();
+    $('#label_number_months').hide();
     $(document).ready(function(){
+      // $('#add_number_of_months').hide();
       $('#get_data input').on('change', function(){
         loan_amnt = $('#loan_amnt').val();
         intrest_rate = $('#intrest_rate').val();
@@ -59,6 +81,17 @@
 					})
         }
       })
+
+      $('#select_cal_type').on('change', function(){
+        var sel_val = $(this).val();
+        if (sel_val == '2') {
+          $('#label_number_months').show();
+          $('#add_number_of_months').show();
+        } else {
+          $('#label_number_months').hide();
+          $('#add_number_of_months').hide();
+        }
+      });
 
 
       $.ajaxSetup({
@@ -112,6 +145,10 @@
             loan_months : {required: true,digits:true},
             monthly_emi : {required: true,digits:true},
             total_intrest_paid : {required: true,digits:true},
+            installment_paid : {required: true, digits:true},
+            select_cal_type : {required: true},
+            add_number_of_months : {required: true, digits:true},
+            new_roi: {required: true},
           },
           messages:{
 
@@ -121,13 +158,17 @@
             var loan_amount = $('#loan_amnt').val();
             var intrest_rate = $('#intrest_rate').val();
             var loan_months = $('#loan_months').val();
-            var data_to_send = {'emi': emi_amount, 'loan_amnt': loan_amnt, 'intrest_rate': intrest_rate, 'loan_months': loan_months, 'initial': 1}
+            var installment_paid = $('#installment_paid').val();
+            var select_cal_type = $('#select_cal_type').val();
+            var add_number_of_months = $('#add_number_of_months').val();
+            var rate_of_intrest = $('#new_roi').val()
+            var data_to_send = {'emi': emi_amount, 'loan_amnt': loan_amnt, 'intrest_rate': intrest_rate, 'loan_months': loan_months,'installment_paid':installment_paid, 'cal_type':select_cal_type, 'number_of_months':add_number_of_months,'new_roi': rate_of_intrest,'initial': 1}
             // var data= JSON.stringify( $(form).serializeArray()) // this gets the serialized data of form
             console.log(data_to_send,"::::PPPPPPPPPPPPPPPPPPPPPPPPPPP");
             ajax_call_write('/ajax_request_data/', data_to_send, 'POST', function(response){
    						if (response.status == 200 || response.status == '200') {
    							console.log(response, ":::::::::::::::::::::::::");
-                var table_form = '<br><table class="table table-striped"><thead><th>Month</th><th>Principle</th><th>EMI</th><th>Intrest paid</th><th>Principle paid</th><th>Remaining Amount</th></thead><tbody>'
+                var table_form = '<br><h3 style="text-align: center;">Detailed Loan Amortization Schedule</h3><table class="table table-striped"><thead><th>Month</th><th>Principle</th><th>EMI</th><th>Intrest paid</th><th>Principle paid</th><th>Remaining Amount</th></thead><tbody>'
                 console.log(response.data.length,"44444444444");
                 for (var i = 0; i < response.data.length; i++) {
                   var table_data = "<tr>"

@@ -2,14 +2,16 @@ from django.shortcuts import render
 from django.http import HttpResponse, HttpResponseRedirect
 import numpy as np
 from django.views import View
-import json
+import json, sys
 from calculation.formulas import ExcelFormulas
+from calculation.forms import MortageForm
 # Create your views here.
 
 def calculate(request):
     try:
+        mortage = MortageForm()
         # return HttpResponse('Test')
-        return render(request,'calculate.html', {})
+        return render(request,'calculate.html', {'form': mortage})
     except Exception as e:
         print (e, "LLLLLLLLLLLLLL")
 
@@ -30,34 +32,86 @@ def ajax_request_data(request):
                 print (excel_formula.CumPrinc(.12/12,300,10000000,1,84,0), 'Cummalative price')
                 return HttpResponse(json.dumps(response))
             elif request.POST['initial'] == '1':
-                emi = float(request.POST['emi'])
+                emi = round(float(request.POST['emi']),0)
                 loan_amnt = float(request.POST['loan_amnt'])
                 intrest_rate = float(request.POST['intrest_rate'])
                 loan_months = int(request.POST['loan_months'])
+                installment_paid = int(request.POST['installment_paid'])
+                cal_type = int(request.POST['cal_type'])
+                number_of_months = int(request.POST['number_of_months'])
+                new_roi = float(request.POST['new_roi'])
 
-                ammotization = []
-                update_loan = loan_amnt
-                for cnt in range(1,loan_months+1):
-                    principle = abs(round(((intrest_rate/100)/12 * update_loan) - emi ,0))
-                    intrest = round(emi - principle, 0)
-                    # update_loan = update_loan - emi
-                    if round(update_loan,0) < emi:
-                        ammotization.append([cnt,round(update_loan,0), emi, intrest, principle, 0])
-                    else:
-                        ammotization.append([cnt,round(update_loan,0), emi, intrest, principle, update_loan-principle])
-                    update_loan = update_loan - principle
 
-                response = {'status':200, 'data': ammotization}
-                return HttpResponse(json.dumps(response))
+                new_anno =  return_ammotization(loan_amnt,intrest_rate, new_roi, loan_months, installment_paid, cal_type,number_of_months)
+                return HttpResponse(json.dumps(new_anno))
+                # ammotization = []
+                # update_loan = loan_amnt
+                # for cnt in range(1,loan_months+1):
+                #     principle = round(emi - ((intrest_rate/100)/12 * update_loan) ,0)
+                #     intrest = round(emi - principle, 0)
+                #     # update_loan = update_loan - emi
+                #     if round(update_loan,0) < emi:
+                #         ammotization.append([cnt,round(update_loan,0), emi, intrest, principle, 0])
+                #     else:
+                #         ammotization.append([cnt,round(update_loan,0), emi, intrest, principle, update_loan-principle])
+                #     update_loan = update_loan - principle
+                #
+                # response = {'status':200, 'data': ammotization}
+                # return HttpResponse(json.dumps(response))
 
-        elif request.method =='GET':
-            return render(request, 'header.html', {})
-            # return HttpResponse(json.dumps({'status':232, "msg": 456}))
     except Exception as e:
         print (e, "Error at ajax_request_data")
 
 
+def return_ammotization(loan_amount,old_roi, new_roi, old_months, paid_months, case_opt,cust_month):
+    try:
+        new_rate = (old_roi/100)/12
+        new_emi_rate = (new_roi/100)/12
+        remaining_principle = get_annotized_ammount(new_rate,loan_amount, old_months, paid_months)
+        print (remaining_principle, "Remaining principle")
+        if case_opt == 1:
+            emi = round(abs(np.pmt(new_emi_rate, old_months-paid_months, remaining_principle)),0)
+            print (emi ,"EMI in case 1",old_months-paid_months)
+            return get_annotized_list(new_emi_rate, remaining_principle, emi, old_months-paid_months)
+        elif case_opt == 2:
+            emi = round(abs(np.pmt(new_emi_rate, cust_month, remaining_principle)),0)
+            print (emi, "EMI in case 2")
+            return get_annotized_list(new_emi_rate, remaining_principle, emi, cust_month)
+    except Exception as emp:
+        print ('Error occured at the return_ammotization_function', emp)
+        print ("line number of error {}".format(sys.exc_info()[-1].tb_lineno))
 
+
+def get_annotized_ammount(rate, amount, months, months_paid):
+    print (rate, amount, months, months_paid, ":::::::::::::::::::OOOOOOOOOOOO")
+    monthly_emi = abs(round(np.pmt(rate,months, amount),0))
+    print(monthly_emi, "EMI")
+    update_amount = amount
+    for i in range(1,months_paid+1):
+        principle = round(monthly_emi-(rate*update_amount),0)
+        print (principle, "::::")
+        update_amount -= principle
+        print (update_amount, ":P:P:P:P:P:P:P:P:P")
+
+    print (update_amount, "<<<<<<<< Update Amount")
+    return update_amount
+
+
+def get_annotized_list(intrest_rate, loan_amnt, emi,loan_months):
+    ammotization = []
+    update_loan = loan_amnt
+    for cnt in range(1,loan_months+1):
+        principle = abs(emi - round(intrest_rate * update_loan ,0))
+        intrest = round(emi - principle, 0)
+        # update_loan = update_loan - emi
+        if round(update_loan,0) < emi:
+            ammotization.append([cnt,round(update_loan,0), emi, intrest, principle, 0])
+        else:
+            ammotization.append([cnt,round(update_loan,0), emi, intrest, principle, update_loan-principle])
+        update_loan = update_loan - principle
+
+    response = {'status':200, 'data': ammotization}
+    return response
 # class Classbased(View):
 #     """docstring for Classbased."""
 #     def __init__(self):
