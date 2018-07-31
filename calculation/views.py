@@ -67,16 +67,26 @@ def return_ammotization(loan_amount,old_roi, new_roi, old_months, paid_months, c
     try:
         new_rate = (old_roi/100)/12
         new_emi_rate = (new_roi/100)/12
+        emi_amount = np.pmt(new_rate, old_months, loan_amount)
+        old_intrest_total = abs((abs(emi_amount)*old_months) - loan_amount)
         remaining_principle = get_annotized_ammount(new_rate,loan_amount, old_months, paid_months)
         print (remaining_principle, "Remaining principle")
         if case_opt == 1:
             emi = round(abs(np.pmt(new_emi_rate, old_months-paid_months, remaining_principle)),0)
-            print (emi ,"EMI in case 1",old_months-paid_months)
-            return get_annotized_list(new_emi_rate, remaining_principle, emi, old_months-paid_months)
+            new_intrest_total = abs((abs(emi)*old_months-paid_months) - remaining_principle)
+            intrest_saved = old_intrest_total - new_intrest_total
+            print (emi ,"EMI in case 1",new_intrest_total, "::::::", intrest_saved)
+            return_list = get_annotized_list(new_emi_rate, remaining_principle, emi, old_months-paid_months)
+            return_list['intrest_saved'] = round(intrest_saved,2)
+            return return_list
         elif case_opt == 2:
             emi = round(abs(np.pmt(new_emi_rate, cust_month, remaining_principle)),0)
-            print (emi, "EMI in case 2")
-            return get_annotized_list(new_emi_rate, remaining_principle, emi, cust_month)
+            new_intrest_total = abs((abs(emi)*cust_month) - remaining_principle)
+            intrest_saved = old_intrest_total - new_intrest_total
+            print (emi, "EMI in case 2", new_intrest_total, "::::::", intrest_saved)
+            return_list = get_annotized_list(new_emi_rate, remaining_principle, emi, cust_month)
+            return_list['intrest_saved'] = round(intrest_saved,2)
+            return return_list
     except Exception as emp:
         print ('Error occured at the return_ammotization_function', emp)
         print ("line number of error {}".format(sys.exc_info()[-1].tb_lineno))

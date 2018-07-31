@@ -48,6 +48,10 @@
         <label for="add_number_of_months" id="label_number_months">Add number of months</label>
         <input type="number" class="form-control" name="add_number_of_months" id="add_number_of_months" value="0">
         <br>
+        <div class="show_intrest_saved">
+          <label for="">Intrest Saved</label>
+          <input type="number" class="form-control" name="intrest_saved" id="intrest_saved">
+        </div><br>
         <button class="btn btn-primary" type="submit" >View ammotization</button>
     </form>
 
@@ -64,6 +68,7 @@
   {% endautoescape %}
     $('#add_number_of_months').hide();
     $('#label_number_months').hide();
+    $('.show_intrest_saved').hide();
     $(document).ready(function(){
       // $('#add_number_of_months').hide();
       $('#get_data input').on('change', function(){
@@ -141,7 +146,7 @@
         $('form#ammotization_form').validate({
           rules: {
             loan_amnt : {required: true,digits:true},
-            intrest_rate : {required: true,digits:true},
+            intrest_rate : {required: true},
             loan_months : {required: true,digits:true},
             monthly_emi : {required: true,digits:true},
             total_intrest_paid : {required: true,digits:true},
@@ -167,9 +172,9 @@
             console.log(data_to_send,"::::PPPPPPPPPPPPPPPPPPPPPPPPPPP");
             ajax_call_write('/ajax_request_data/', data_to_send, 'POST', function(response){
    						if (response.status == 200 || response.status == '200') {
-   							console.log(response, ":::::::::::::::::::::::::");
+   							// console.log(response, ":::::::::::::::::::::::::");
                 var table_form = '<br><h3 style="text-align: center;">Detailed Loan Amortization Schedule</h3><table class="table table-striped"><thead><th>Month</th><th>Principle</th><th>EMI</th><th>Intrest paid</th><th>Principle paid</th><th>Remaining Amount</th></thead><tbody>'
-                console.log(response.data.length,"44444444444");
+                // console.log(response.data.length,"44444444444");
                 for (var i = 0; i < response.data.length; i++) {
                   var table_data = "<tr>"
                   for (var j = 0; j < 6; j++) {
@@ -181,6 +186,8 @@
                 }
                 table_form += +'</tbody></table>'
                 $('.show_the_ammo').html(table_form);
+                $('.show_intrest_saved').show();
+                $('#intrest_saved').val(response.intrest_saved);
    						}
    					})
     			}
