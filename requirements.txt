@@ -4,5 +4,4 @@ MarkupSafe==0.18
 numpy==1.15.0
 requests==2.2.1
 six==1.5.2
-virtualenv==16.0.0
-wheel==0.24.0
+
